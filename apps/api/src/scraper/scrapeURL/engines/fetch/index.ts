@@ -2,45 +2,52 @@ import { EngineScrapeResult } from '..';
 import { Meta } from '../..';
 import { TimeoutError } from '../../error';
 import { specialtyScrapeCheck } from '../utils/specialtyHandler';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
-export async function scrapeURLWithFetch(
+export async function scrapeURLWithAxios(
   meta: Meta
 ): Promise<EngineScrapeResult> {
   const timeout = 20000;
 
-  // Configure proxy from environment variables
-  const proxyServer = process.env.PROXY_SERVER;
-  const proxyUsername = process.env.PROXY_USERNAME;
-  const proxyPassword = process.env.PROXY_PASSWORD;
-
-  const proxyUrl = `http://${proxyUsername}:${proxyPassword}@${proxyServer}`;
-  const proxyAgent = new HttpsProxyAgent(proxyUrl);
-
-  const response = await Promise.race([
-    fetch(meta.url, {
-      redirect: 'follow',
+  try {
+    const response = await axios({
+      method: 'get',
+      url: meta.url,
       headers: meta.options.headers,
-      agent: proxyAgent,
-    }),
-    (async () => {
-      await new Promise((resolve) => setTimeout(() => resolve(null), timeout));
+      timeout,
+      proxy: {
+        host: process.env.PROXY_SERVER?.split(':')[0] || '',
+        port: parseInt(process.env.PROXY_SERVER?.split(':')[1] || '0'),
+        auth: {
+          username: process.env.PROXY_USERNAME || '',
+          password: process.env.PROXY_PASSWORD || '',
+        },
+      },
+      maxRedirects: 5,
+    });
+
+    specialtyScrapeCheck(
+      meta.logger.child({ method: 'scrapeURLWithAxios/specialtyScrapeCheck' }),
+      Object.fromEntries(
+        Object.entries(response.headers).map(([key, value]) => [
+          key,
+          String(value),
+        ])
+      )
+    );
+
+    return {
+      url: response.request.res.responseUrl || meta.url,
+      html: response.data,
+      statusCode: response.status,
+    };
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
       throw new TimeoutError(
-        'Fetch was unable to scrape the page before timing out',
+        'Axios was unable to scrape the page before timing out',
         { cause: { timeout } }
       );
-    })(),
-  ]);
-
-  specialtyScrapeCheck(
-    meta.logger.child({ method: 'scrapeURLWithFetch/specialtyScrapeCheck' }),
-    Object.fromEntries(response.headers as any)
-  );
-
-  return {
-    url: response.url,
-    html: await response.text(),
-    statusCode: response.status,
-  };
+    }
+    throw error;
+  }
 }
