@@ -16,18 +16,18 @@ export async function scrapeURLWithFetch(
       headers: meta.options.headers,
       timeout,
       proxy: {
-        host: process.env.PROXY_SERVER?.split(':')[0] || '',
-        port: parseInt(process.env.PROXY_SERVER?.split(':')[1] || '0'),
+        host: 'gw.dataimpulse.com',
+        port: 823,
         auth: {
-          username: process.env.PROXY_USERNAME || '',
-          password: process.env.PROXY_PASSWORD || '',
+          username: 'b10bffb8a44bcba3bfb1__cr.nl,be,at,de',
+          password: '9465fa2ce4dd6d2d',
         },
       },
       maxRedirects: 5,
     });
 
     specialtyScrapeCheck(
-      meta.logger.child({ method: 'scrapeURLWithAxios/specialtyScrapeCheck' }),
+      meta.logger.child({ method: 'scrapeURLWithFetch/specialtyScrapeCheck' }),
       Object.fromEntries(
         Object.entries(response.headers).map(([key, value]) => [
           key,
@@ -44,7 +44,7 @@ export async function scrapeURLWithFetch(
   } catch (error) {
     if (error.code === 'ECONNABORTED') {
       throw new TimeoutError(
-        'Axios was unable to scrape the page before timing out',
+        'Fetch was unable to scrape the page before timing out',
         { cause: { timeout } }
       );
     }
