@@ -3,6 +3,7 @@ import { Meta } from '../..';
 import { TimeoutError } from '../../error';
 import { specialtyScrapeCheck } from '../utils/specialtyHandler';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import fetch from 'node-fetch';
 
 export async function scrapeURLWithFetch(
   meta: Meta
