@@ -4,7 +4,7 @@ import { TimeoutError } from '../../error';
 import { specialtyScrapeCheck } from '../utils/specialtyHandler';
 import axios from 'axios';
 
-export async function scrapeURLWithAxios(
+export async function scrapeURLWithFetch(
   meta: Meta
 ): Promise<EngineScrapeResult> {
   const timeout = 20000;
